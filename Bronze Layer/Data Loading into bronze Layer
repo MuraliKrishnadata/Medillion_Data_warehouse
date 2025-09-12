@@ -1,1 +1,169 @@
+/*loading CRM and ERP CSV files into defined tables*/
+
+
+
+
+USE [Warehouse]
+GO
+
+-- Drop if exists
+IF OBJECT_ID('bronze.load_bronze', 'P') IS NOT NULL
+    DROP PROCEDURE bronze.load_bronze;
+GO
+
+/****** Object:  StoredProcedure [bronze].[load_bronze]    Script Date: 13-09-2025 04:16:44 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [bronze].[load_bronze] 
+AS
+BEGIN
+    -- Declare variables for timing
+    DECLARE @Start_time DATETIME, 
+            @End_time   DATETIME,
+			@Batch_Start_Time DATETIME,
+			@Batch_End_time DATETIME;
+
+	set @Batch_Start_Time=GETDATE()
+    BEGIN TRY
+        PRINT '======================================';
+        PRINT 'Loading bronze layer';
+        PRINT '======================================';
+        PRINT '--------------------------------------------';
+        PRINT 'Loading CRM source';
+        PRINT '--------------------------------------------';
+
+        -- CRM Customer Info
+        SET @Start_time = GETDATE();
+        PRINT '>>TRUNCATE and loading bronze.crm_cust_info ';
+        TRUNCATE TABLE bronze.crm_cust_info;
+        BULK INSERT bronze.crm_cust_info
+        FROM 'C:\Users\gkmur\OneDrive\Desktop\SQL data source\Source CRM\cust_info.csv'
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = ',',
+            ROWTERMINATOR = '0x0a',
+            TABLOCK
+        );
+        SET @End_time = GETDATE();
+        PRINT '>>Load Duration ' + CAST(DATEDIFF(SECOND,@Start_time,@End_time) AS NVARCHAR) + ' Seconds';
+        PRINT '-------------------------';
+
+        -- CRM Product Info
+        SET @Start_time = GETDATE();
+        PRINT 'Loading CRM Product Info';
+        PRINT '>>TRUNCATE and loading bronze.crm_prd_info ';
+        TRUNCATE TABLE bronze.crm_prd_info;
+        BULK INSERT bronze.crm_prd_info
+        FROM 'C:\Users\gkmur\OneDrive\Desktop\SQL data source\Source CRM\prd_info.csv'
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = ',',
+            ROWTERMINATOR = '0x0a',
+            TABLOCK
+        );
+        SET @End_time = GETDATE();
+        PRINT '>>Load Duration ' + CAST(DATEDIFF(SECOND,@Start_time,@End_time) AS NVARCHAR) + ' Seconds';
+        PRINT '-------------------------';
+
+        -- CRM Sales Details
+        SET @Start_time = GETDATE();
+        PRINT 'CRM Sales Details';
+        PRINT '>>TRUNCATE and loading bronze.crm_sales_details_info ';
+        TRUNCATE TABLE bronze.crm_sales_details_info;
+        BULK INSERT bronze.crm_sales_details_info
+        FROM 'C:\Users\gkmur\OneDrive\Desktop\SQL data source\Source CRM\sales_details.csv'
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = ',',
+            ROWTERMINATOR = '0x0a',
+            TABLOCK
+        );
+        SET @End_time = GETDATE();
+        PRINT '>>Load Duration ' + CAST(DATEDIFF(SECOND,@Start_time,@End_time) AS NVARCHAR) + ' Seconds';
+        PRINT '-------------------------';
+
+        PRINT '---------------------------------------';
+        PRINT 'ERP loading system';
+        PRINT '---------------------------------------';
+
+        -- ERP Customer
+        SET @Start_time = GETDATE();
+        PRINT 'ERP Customer';
+        PRINT '>>TRUNCATE and loading bronze.erp_cust_az12 ';
+        TRUNCATE TABLE bronze.erp_cust_az12;
+        BULK INSERT bronze.erp_cust_az12
+        FROM 'C:\Users\gkmur\OneDrive\Desktop\SQL data source\Source ERP\cust_az12.csv'
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = ',',
+            ROWTERMINATOR = '0x0a',
+            TABLOCK
+        );
+        SET @End_time = GETDATE();
+        PRINT '>>Load Duration ' + CAST(DATEDIFF(SECOND,@Start_time,@End_time) AS NVARCHAR) + ' Seconds';
+        PRINT '-------------------------';
+
+        -- ERP Location
+        SET @Start_time = GETDATE();
+        PRINT 'ERP Location';
+        PRINT '>>TRUNCATE and loading bronze.erp_loc_a101';
+        TRUNCATE TABLE bronze.erp_loc_a101;
+        BULK INSERT bronze.erp_loc_a101
+        FROM 'C:\Users\gkmur\OneDrive\Desktop\SQL data source\Source ERP\loc_a101.csv'
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = ',',
+            ROWTERMINATOR = '0x0a',
+            TABLOCK
+        );
+        SET @End_time = GETDATE();
+        PRINT '>>Load Duration ' + CAST(DATEDIFF(SECOND,@Start_time,@End_time) AS NVARCHAR) + ' Seconds';
+        PRINT '-------------------------';
+
+        -- ERP Product Category
+        SET @Start_time = GETDATE();
+        PRINT 'ERP Product Category';
+        PRINT '>>TRUNCATE and loading bronze.erp_px_cat_g1v2';
+        TRUNCATE TABLE bronze.erp_px_cat_g1v2;
+        BULK INSERT bronze.erp_px_cat_g1v2
+        FROM 'C:\Users\gkmur\OneDrive\Desktop\SQL data source\Source ERP\px_cat_g1v2.csv'
+        WITH (
+            FIRSTROW = 2,
+            FIELDTERMINATOR = ',',
+            ROWTERMINATOR = '0x0a',
+            TABLOCK
+        );
+        SET @End_time = GETDATE();
+        PRINT '>>Load Duration ' + CAST(DATEDIFF(SECOND,@Start_time,@End_time) AS NVARCHAR) + ' Seconds';
+        PRINT '-------------------------';
+
+		set @Batch_End_Time=GETDATE()
+		PRINT '>>Bronze loading is completed ! Duration ' + CAST(DATEDIFF(SECOND,@Batch_Start_time,@Batch_End_time) AS NVARCHAR) + ' Seconds';
+        PRINT '-------------------------';
+    END TRY
+    BEGIN CATCH
+        PRINT '==========================================';
+        PRINT 'ERROR OCCURRED DURING LOADING BRONZE LAYER';
+        PRINT 'Error Message: ' + ERROR_MESSAGE();
+        PRINT 'Error State: ' + CAST(ERROR_STATE() AS NVARCHAR);
+    END CATCH
+END;
+GO
+
+
+/* excution of bronze.load_bronze procuder */
+USE [Warehouse]
+GO
+
+DECLARE	@return_value int
+
+EXEC	@return_value = [bronze].[load_bronze]
+
+SELECT	'Return Value' = @return_value
+
+GO
 
